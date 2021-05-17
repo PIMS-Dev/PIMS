@@ -36,9 +36,11 @@ unsigned char* doubleSHA256(const unsigned char* input, unsigned int length) {
     return result2;
 }
 
-encryptedData* AES256CBCEncrypt(const unsigned char* plain_data, unsigned int plain_data_length, unsigned char* key, unsigned char* iv) {
+encryptedData* AES256CBCEncrypt(const unsigned char* plain_data, unsigned int plain_data_length, unsigned char* key, unsigned char* iv_in) {
     AES_KEY aes_key;
     AES_set_encrypt_key((const unsigned char*)key,256,&aes_key);
+    unsigned char iv[16];
+    memcpy((void*)(&iv),(void*)iv_in,16);
     
     unsigned char padding = 16 - plain_data_length % 16;
     unsigned int all_plain_data_length = plain_data_length + padding;
@@ -69,9 +71,11 @@ encryptedData* AES256CBCEncrypt(const unsigned char* plain_data, unsigned int pl
     return return_struct;
 }
 
-unsigned char* AES256CBCDecrypt(encryptedData* encrypted_data, unsigned char* key, unsigned char* iv) {
+unsigned char* AES256CBCDecrypt(encryptedData* encrypted_data, unsigned char* key, unsigned char* iv_in) {
     AES_KEY aes_key;
     AES_set_decrypt_key((const unsigned char*)key,256,&aes_key);
+    unsigned char iv[16];
+    memcpy((void*)(&iv),(void*)iv_in,16);
     
     unsigned char data_block[16];
     unsigned char out[16];
