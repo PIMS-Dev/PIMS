@@ -6,9 +6,10 @@
 #include<stdlib.h>
 #include<errno.h>
 
-#ifdef (WIN32)
+#ifdef WIN32
 
 #include<winsock2.h>
+#include<windows.h>
 
 typedef struct  {
 	SOCKET socket;
@@ -25,33 +26,33 @@ void socketCleanup() {
 }
 
 PIMS_SOCKET* createSocket() {
-	SOCKET socket = socket(PF_INET,SOCKET_STREAM,IPPROTO_TCP);
+	SOCKET new_socket = socket(PF_INET,SOCK_STREAM,IPPROTO_TCP);
 	PIMS_SOCKET* pims_socket = (PIMS_SOCKET*)malloc(sizeof(PIMS_SOCKET));
-	pims_socket->socket = socket;
+	pims_socket->socket = new_socket;
 	return pims_socket;
 }
 
-bool bindSocket(char* ip,int port) {
+bool bindSocket(PIMS_SOCKET* socket, char* ip,int port) {
 	struct sockaddr_in socket_address;
 	memset((void*)(&socket_address),0,sizeof(socket_address));
 	socket_address.sin_family = PF_INET;
 	socket_address.sin_addr.s_addr = inet_addr(ip);
 	socket_address.sin_port = htons(port);
-	if(bind(socket,(SOCKETADDR*)socket_address,sizeof(SOCKADDR)) == SOCKET_ERROR) {
+	if(bind(socket->socket,(SOCKADDR*)(&socket_address),sizeof(SOCKADDR)) == SOCKET_ERROR) {
 		return false;
 	}
-	listen(socket,5);
+	listen(socket->socket,5);
 	
 	return true;
 }
 
-bool connectSocket(char* ip,int port) {
+bool connectSocket(PIMS_SOCKET*socket, char* ip,int port) {
 	struct sockaddr_in socket_address;
 	memset((void*)(&socket_address),0,sizeof(socket_address));
 	socket_address.sin_family = PF_INET;
 	socket_address.sin_addr.s_addr = inet_addr(ip);
 	socket_address.sin_port = htons(port);
-	if(connect(socket,(SOCKETADDR*)socket_address,sizeof(SOCKADDR)) == SOCKET_ERROR) {
+	if(connect(socket->socket,(SOCKADDR*)(&socket_address),sizeof(SOCKADDR)) == SOCKET_ERROR) {
 		return false;
 	}
 	return true;
@@ -65,13 +66,8 @@ PIMS_SOCKET* acceptConnection(PIMS_SOCKET* socket) {
 	return connection;
 }
 
-void sendData(PIMS_SOCKET* socket, unsigned char* data, unsigned int length) {
+void sendData(PIMS_SOCKET* socket, const unsigned char* data, unsigned int length) {
 	send(socket->socket,data,length,0);
-}
-
-void closeSocket(PIMS_SOCKET* socket) {
-	closesocket(socket->socket);
-	free(socket);
 }
 
 unsigned char* receiveData(PIMS_SOCKET* socket,int* status) {
@@ -115,5 +111,12 @@ unsigned char* receiveData(PIMS_SOCKET* socket,int* status) {
 
 	return recv_data;
 }
+
+void closeSocket(PIMS_SOCKET* socket) {
+	closesocket(socket->socket);
+	free(socket);
+}
+
+#endif
 
 #endif
