@@ -41,7 +41,9 @@ bool bindSocket(PIMS_SOCKET* socket, char* ip,int port) {
 	if(bind(socket->socket,(SOCKADDR*)(&socket_address),sizeof(SOCKADDR)) == SOCKET_ERROR) {
 		return false;
 	}
-	listen(socket->socket,5);
+	if(listen(socket->socket,5) == SOCKET_ERROR) {
+		return false;
+	}
 	
 	return true;
 }
@@ -59,10 +61,9 @@ bool connectSocket(PIMS_SOCKET*socket, char* ip,int port) {
 }
 
 PIMS_SOCKET* acceptConnection(PIMS_SOCKET* socket) {
-	SOCKADDR client_address;
-	SOCKET client_socket = accept(socket->socket,&client_address,sizeof(SOCKADDR));
-	PIMS_SOCKET* connection = (PINS_SOCKET*)malloc(sizeof(PIMS_SOCKET));
-	connection->socket = client_socket
+	SOCKET client_socket = accept(socket->socket,(SOCKADDR*)NULL,NULL);
+	PIMS_SOCKET* connection = (PIMS_SOCKET*)malloc(sizeof(PIMS_SOCKET));
+	connection->socket = client_socket;
 	return connection;
 }
 
@@ -115,6 +116,67 @@ unsigned char* receiveData(PIMS_SOCKET* socket,int* status) {
 void closeSocket(PIMS_SOCKET* socket) {
 	closesocket(socket->socket);
 	free(socket);
+}
+
+#else
+
+#include<sys/types.h>
+#include<sys/socket.h>
+#include<netinet/in.h>
+#include<arpa/inet.h>
+
+typedef struct {
+	int socket;
+}PIMS_SOCKET;
+
+void socketStartup() {
+	
+}
+
+void socketCleanup() {
+	
+}
+
+PIMS_SOCKET* createSocket() {
+	int new_socket = socket(AF_INET,SOCK_STREAM,0);
+	PIMS_SOCKET* pims_socket = (PIMS_SOCKET*)malloc(sizeof(PIMS_SOCKET));
+	pims_socket->socket = new_socket;
+	return pims_socket;
+}
+
+bool bindSocket(PIMS_SOCKET* socket, char* ip,int port) {
+	struct sockaddr_in socket_address;
+	memset((void*)(&socket_address),0,sizeof(socket_address));
+	socket_address.sin_family = PF_INET;
+	socket_address.sin_addr.s_addr = inet_addr(ip);
+	socket_address.sin_port = htons(port);
+	if(bind(socket->socket,(struct sockaddr*)(&socket_address),sizeof(struct sockaddr*)) == -1) {
+		return false;
+	}
+	if(listen(socket->socket,5) == -1) {
+		return false;
+	}
+	
+	return true;
+}
+
+bool connectSocket(PIMS_SOCKET*socket, char* ip,int port) {
+	struct sockaddr_in socket_address;
+	memset((void*)(&socket_address),0,sizeof(socket_address));
+	socket_address.sin_family = PF_INET;
+	socket_address.sin_addr.s_addr = inet_addr(ip);
+	socket_address.sin_port = htons(port);
+	if(connect(socket->socket,(SOCKADDR*)(&socket_address),sizeof(SOCKADDR)) == SOCKET_ERROR) {
+		return false;
+	}
+	return true;
+}
+
+PIMS_SOCKET* acceptConnection(PIMS_SOCKET* socket) {
+	int client_socket = accept(socket->socket,(struct sockaddr*)NULL,NULL);
+	PIMS_SOCKET* connection = (PIMS_SOCKET*)malloc(sizeof(PIMS_SOCKET));
+	connection->socket = client_socket
+	return connection;
 }
 
 #endif

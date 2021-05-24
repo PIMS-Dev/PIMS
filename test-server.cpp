@@ -8,7 +8,7 @@ int main() {
 	socketStartup();
 	PIMS_SOCKET* socket = createSocket();
 	printf("socket create\n");
-	bindSocket(socket,"127.0.0.1",24940);
+	bindSocket(socket,(char*)"127.0.0.1",24940);
 	PIMS_SOCKET* conn = acceptConection(socket);
 	string str = "wdnmd server!";
 	sendData(conn,(const unsigned char*)str.c_str(),str.length());
