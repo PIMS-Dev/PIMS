@@ -52,6 +52,8 @@ storeDir
 
 # 数据传输包结构
 ## 总包头
+12byte 字符串PIMS-Protocol  
+1byte 版本号(uint8)  
 1byte 包类型识别码  
 8byte 余下包的长度(uint64)  
 
