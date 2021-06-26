@@ -9,7 +9,6 @@ import (
 
 func EncryptAES256CBC(data []byte, key [32]byte, iv [16]byte) ([]byte, error) {
 	block, err := aes.NewCipher(key[:32])
-
 	if err != nil {
 		return nil, err
 	}
@@ -54,4 +53,30 @@ func PKCS7UnPadding(data []byte) []byte {
 	length := len(data)
 	unpadding := int(data[length-1])
 	return data[:(length - unpadding)]
+}
+
+func EncryptAES256CBCWithoutPaddingAndVerify(data []byte, key [32]byte, iv [16]byte) ([]byte, error) {
+	block, err := aes.NewCipher(key[:32])
+	if err != nil {
+		return nil, err
+	}
+
+	blockMode := cipher.NewCBCEncrypter(block, iv[:16])
+	crypted := make([]byte, len(data))
+	blockMode.CryptBlocks(crypted, data)
+
+	return crypted, nil
+}
+
+func DecryptAES256CBCWithoutPaddingAndVerify(data []byte, key [32]byte, iv [16]byte) ([]byte, error) {
+	block, err := aes.NewCipher(key[:32])
+	if err != nil {
+		return nil, err
+	}
+
+	blockMode := cipher.NewCBCDecrypter(block, iv[:16])
+	decrypted := make([]byte, len(data))
+	blockMode.CryptBlocks(decrypted, data)
+
+	return decrypted, nil
 }

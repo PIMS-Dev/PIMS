@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"./PIMS/PIMS_crypto"
+	"PIMS/PIMS_crypto"
 )
 
 func main() {
-	sha256 := PIMS_crypto.DoubleSHA256([]byte("test string"))
-	md5 := PIMS_crypto.DoubleMD5([]byte("test string"))
+	sha256 := PIMS_crypto.SHA256([]byte("test string"))
+	md5 := PIMS_crypto.MD5([]byte("test string"))
 	fmt.Printf("%x\n%x\n", sha256, md5)
 	orig := "01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678912345678"
 	encrypted, _ := PIMS_crypto.EncryptAES256CBC([]byte(orig), sha256, md5)

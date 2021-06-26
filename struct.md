@@ -2,26 +2,53 @@
 storeDir  
 |-account  
 | |-用户id  
-| | |-publicKey.pem (用户公钥)  
-| | |-iv.txt (就是用户数据的iv)  
-| | |-salt.txt (用户密码生成hash加的盐)  
-| | |-randomByte.txt (随机byte)
-| | |-encryptedRandomByte.txt (用用户密钥加密后的随机byte)
-| | |-userData.data (以用户密码作为aes密钥加密的用户私钥/群聊id列表/群里rsa私钥列表/群聊aes密钥列表)  
+| | |-publiUserData.data (包含用户生成iv的随机byte/用户密码生成hash加的盐/随机byte/用用户aes密钥加密后的随机byte/用户公钥)  
+| | |-userData.data (以用户密码作为aes密钥加密的用户rsa私钥/群聊id列表/群聊rsa私钥列表/群聊aes密钥列表)  
 | | |-inviteBuffer  
-| |   |-邀请id.data (用用户共钥加密的群聊id/群聊rsa私钥/群聊aes密钥)  
+| |   |-邀请id.data (用用户公钥加密的群聊id/群聊aes密钥/群聊rsa私钥)  
 | |   |-...  
 | |-...  
 |-chat  
   |-群聊id  
-  | |-publicKey.pem (群聊公钥)  
-  | |-nowMaxChatNum.txt (目前最大聊天编号)  
+  | |-chatPublicData.data (包括目前最大聊天编号和群聊公钥)  
   | |-chatData  
   |   |-按照每65536条聊天数据分的一个文件夹  
-  |   | |-聊天编号.data (包含消息类型/iv/加密后的聊天数据)  
+  |   | |-聊天编号.data (包含消息类型/生成当前消息iv的随机byte/加密后的聊天数据)  
   |   | |-...  
   |   |-...  
   |-...  
+
+# 服务端文件结构
+## storeDir/account/用户id/publiUserData.data
+16byte 生成iv的随机byte
+32byte 用户密码生成hash加的盐(随机byte)
+64byte 随机byte
+64byte 用用户aes密钥加密后的随机byte
+未定 用户公钥
+
+## storeDir/account/用户id/userData.data(解密后)
+4byte rsa私钥长度(uint32)
+未定 rsa私钥数据
+4byte 群聊数量
+32byte 群聊1id
+4byte 群聊1rsa私钥长度
+未定 群聊1rsa私钥数据
+32byte 群聊1aes密钥
+...
+
+## storeDir/account/用户id/inviteBuffer/邀请id.data(解密后)
+32byte 群聊id
+32byte 群聊aes密钥
+未定 群聊rsa私钥
+
+## storeDir/chat/chatPublicData.data
+8byte 目前最大聊天编号(uint64)
+未定 群聊公钥
+
+## storeDir/chat/chatData/按照每65536条聊天数据分的一个文件夹/聊天编号.data
+1byte 消息类型
+16byte 生成当前消息iv的随机byte
+未定 消息正文
 
 # 数据传输包结构
 ## 总包头
@@ -45,10 +72,10 @@ storeDir
 ### 客户端上传
 识别码: 0x02
 16byte 生成iv的随机byte
-32byte 盐(随机byte)
+32byte 用户密码生成hash加的盐(随机byte)
 32byte 用户id
-32byte 用户随机byte
-32byte 加密后的随机byte
+64byte 用户随机byte
+64byte 加密后的随机byte
 4byte 下面用户公钥的长度(uint32)
 未定 用户公钥
 4byte 下面用户数据的长度(uint32)
@@ -67,7 +94,7 @@ storeDir
 识别码: 0x05
 16byte 生成iv的随机byte
 32byte 盐(随机byte)
-32byte 加密后的用户随机byte
+64byte 加密后的用户随机byte
 8byte 到毫秒的时间戳(uint64)
 16byte 临时随机byte
 
@@ -171,6 +198,7 @@ storeDir
 16byte 临时随机byte
 32byte 聊天id
 1byte 消息类型
+16byte 生成当前消息iv的随机byte
 8byte 消息正文长度(uint64)
 未定 消息正文
 4byte 签名长度
@@ -259,6 +287,7 @@ storeDir
 1byte 状态码(0x00为验证成功，0x01为超时/随机byte不对，0x02为签名校验失败)
 验证成功才有下面的部分
 8byte 消息1序号(uint64)
+16byte 生成消息1iv的随机byte
 8byte 消息1正文长度(uint64)
 未定 消息1正文
 ...
