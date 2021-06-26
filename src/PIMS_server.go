@@ -3,7 +3,9 @@ package main
 import (
 	"os"
 	"fmt"
-	//"net"
+	"net"
+	"bytes"
+	"strconv"
 	"io/ioutil"
 	"encoding/json"
 	//"PIMS/PIMS_crypto"
@@ -12,12 +14,59 @@ import (
 
 var (
 	config configFileStruct
+	serverProtocolVersion uint8 = 1
 )
 
 func main() {
 	fmt.Println("PIMS server starting...")
 	err := createRootDirectory()
 	err = readConfig()
+	handelMainError(err)
+
+	listener, err := net.Listen("tcp",config.ServerIP + ":" + strconv.Itoa(int(config.ServerPort)))
+	handelMainError(err)
+	defer listener.Close()
+
+	fmt.Println("Server started at " + config.ServerIP + ":" + strconv.Itoa(int(config.ServerPort)))
+	for {
+		conn, err := listener.Accept()
+		handelMainError(err)
+		go handelConnection(conn)
+	}
+}
+
+func handelConnection(conn net.Conn) {
+	defer conn.Close()
+	buffer := make([]byte, 22)
+	recvLen, err := conn.Read(buffer)
+	if handelConnectionError(err) {
+		return
+	}
+
+	if recvLen != 22 {
+		return
+	}
+
+	if !bytes.Equal(buffer[0:12], []byte("PIMS-Protocol")[:12]) {
+		return
+	}
+
+	protocolVersion := uint8(buffer[12])
+	if protocolVersion > serverProtocolVersion {
+		fmt.Println("Your PIMS server is out of date. Please update.")
+		return
+	}
+}
+
+func handelConnectionError(err error) bool {
+	if err != nil {
+		fmt.Println("Connection close: "+err.Error())
+		return true
+	}
+	return false
+}
+
+func handelMainError(err error) {
 	if err != nil {
 		fmt.Println(err)
 		fmt.Println("Server exit.")
@@ -26,7 +75,7 @@ func main() {
 }
 
 type configFileStruct struct {
-	ServerIp string `json:"server_ip"`
+	ServerIP string `json:"server_ip"`
 	ServerPort uint16 `json:"server_port"`
 	EnableRegistration bool `json:"enable_registration"`
 	EnableCreateChat bool `json:"enable_create_chat"`
