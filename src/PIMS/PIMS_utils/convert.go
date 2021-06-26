@@ -32,9 +32,17 @@ func ConvertUint64ToBytes(data uint64) []byte {
 }
 
 func ConvertBoolToByte(data bool) byte {
-	var buffer byte
+	var buffer byte = 0
 	if data {
 		buffer = 1
 	}
 	return buffer
+}
+
+func ConvertByteToBool(data byte) bool {
+	var buffer bool = false
+	if data {
+		buffer = true
+	}
+	retuen buffer
 }
