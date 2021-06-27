@@ -9,12 +9,12 @@ import (
 	"io/ioutil"
 	"encoding/json"
 	//"PIMS/PIMS_crypto"
-	//"PIMS/PIMS_utils"
+	"PIMS/PIMS_utils"
 )
 
 var (
 	config configFileStruct
-	serverProtocolVersion uint8 = 1
+	PIMSProtocolVersion uint8 = 1
 )
 
 func main() {
@@ -23,7 +23,7 @@ func main() {
 	err = readConfig()
 	handelMainError(err)
 
-	listener, err := net.Listen("tcp",config.ServerIP + ":" + strconv.Itoa(int(config.ServerPort)))
+	listener, err := net.Listen("tcp", config.ServerIP + ":" + strconv.Itoa(int(config.ServerPort)))
 	handelMainError(err)
 	defer listener.Close()
 
@@ -47,15 +47,19 @@ func handelConnection(conn net.Conn) {
 		return
 	}
 
-	if !bytes.Equal(buffer[0:12], []byte("PIMS-Protocol")[:12]) {
+	if !bytes.Equal(buffer[:12], []byte("PIMS-Protocol")[:12]) {
 		return
 	}
 
 	protocolVersion := uint8(buffer[12])
-	if protocolVersion > serverProtocolVersion {
+	if protocolVersion > PIMSProtocolVersion {
 		fmt.Println("Your PIMS server is out of date. Please update.")
 		return
 	}
+
+	packageType := buffer[13]
+	packageLength := PIMS_utils.ConvertBytesToUint64(buffer[14:])
+	fmt.Println(packageType, packageLength)
 }
 
 func handelConnectionError(err error) bool {
